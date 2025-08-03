@@ -1,9 +1,10 @@
 # RAG Infra – Azure GitOps Platform
 
-This repository defines the **GitOps deployment layer** using ArgoCD's App-of-Apps pattern to deploy the RAG app Helm charts into AKS.
+This repository owns the **GitOps deployment layer** of the Azure RAG Platform. It simulates how real teams manage Kubernetes app delivery at scale — using ArgoCD's App-of-Apps pattern, Helm chart versioning, and modular rollout logic.
 
-🔗 **Part of the full project:**  
-→ [azure-gitops-platform](https://github.com/dhayv/azure-gitops-platform)
+> Built for reproducibility, not demos. This system deploys production-ready workloads declaratively into AKS clusters.
+
+🔗 **Part of the full project:**  → [azure-gitops-platform](https://github.com/dhayv/azure-gitops-platform)
 
 ---
 
@@ -12,11 +13,20 @@ This repository defines the **GitOps deployment layer** using ArgoCD's App-of-Ap
 
 ---
 
+## 🧠 Why This Repo?
+
+Most engineers ship pipelines. **Fewer build deploy orchestration systems**. This repo is where infra meets strategy — owning **what deploys, when, and how.**
+
+This marks the shift from executor to platform operator.
+
+---
+
 ## 🚀 Responsibilities
 
-- Deploys Helm charts from [`rag-app`](https://github.com/dhayv/azure-rag-app)
-- Uses ArgoCD App-of-Apps for scalable multi-app management
-- Manages environment config + chart version bumps
+- 🌀 Orchestrates **ArgoCD App-of-Apps** for multi-app environments
+- 🎯 References Helm charts from [`rag-app`](https://github.com/dhayv/azure-rag-app)
+- 🔁 Owns **chart version bump logic**, config overlays, and sync rules
+- 📦 Simulates **real platform modularity** across dev/staging/prod
 
 > This repo owns **declarative deployment** to AKS using GitOps.
 
