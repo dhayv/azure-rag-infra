@@ -1,8 +1,11 @@
-# RAG Infra – Azure GitOps Platform
+# RAG Infra – Azure GitOps Control Layer
 
-This repository owns the **GitOps deployment layer** of the Azure RAG Platform. It simulates how real teams manage Kubernetes app delivery at scale — using ArgoCD's App-of-Apps pattern, Helm chart versioning, and modular rollout logic.
+**Azure | AKS | Kubernetes | GitOps | Argo CD | CI/CD | Platform Architecture | Declarative Infrastructure**
 
-> Built for reproducibility, not demos. This system deploys production-ready workloads declaratively into AKS clusters.
+This repository governs the **GitOps control plane** for the Azure RAG Platform.  
+It defines the reproducible pattern of **declarative application delivery** into AKS, with Argo CD orchestrating Kubernetes workloads at scale.
+
+> A delivery system by design — professional, reproducible, and structured to extend into multi-service platform operations.
 
 🔗 **Part of the full project:**  → [azure-gitops-platform](https://github.com/dhayv/azure-gitops-platform)
 
@@ -10,31 +13,44 @@ This repository owns the **GitOps deployment layer** of the Azure RAG Platform. 
 
 ## 🧱 Structure
 
+- **Namespace** → isolates the RAG application (`ragapp`)  
+- **Deployment** → FastAPI app with replicas + health checks  
+- **Service** → exposes the app internally and via LoadBalancer  
+- **Secrets** → manages Azure credentials for RAG integration  
+- **Argo CD Root App** → directs this repo declaratively into AKS  
 
 ---
 
 ## 🧠 Why This Repo?
 
-Most engineers ship pipelines. **Fewer build deploy orchestration systems**. This repo is where infra meets strategy — owning **what deploys, when, and how.**
+Most engineers ship pipelines. **Fewer design the control layer that governs delivery.**  
+This repo shows how to own **what ships, when, and how** — with Git as the source of truth, Argo CD as the orchestrator, and AKS as the execution platform.  
 
-This marks the shift from executor to platform operator.
+It marks the shift from executor to **platform operator and architect**.
 
 ---
 
 ## 🚀 Responsibilities
 
-- 🌀 Orchestrates **ArgoCD App-of-Apps** for multi-app environments
-- 🎯 References Helm charts from [`rag-app`](https://github.com/dhayv/azure-rag-app)
-- 🔁 Owns **chart version bump logic**, config overlays, and sync rules
-- 📦 Simulates **real platform modularity** across dev/staging/prod
-
-> This repo owns **declarative deployment** to AKS using GitOps.
+- ✅ Installs and configures **Argo CD** in AKS  
+- ✅ Deploys the RAG API into a dedicated namespace  
+- ✅ Owns manifests for Deployment, Service, Namespace, and Secrets  
+- ✅ Directs the **GitOps reconciliation loop**: Git → Argo CD → AKS  
 
 ---
 
-## 🧪 Coming Soon
+## 🧪 Roadmap
 
-- Environment overlays (dev/staging/prod)  
-- Kustomize or Jsonnet templating  
-- ArgoCD auto-sync strategies
+- Extend into **App-of-Apps orchestration** for rag-infra + rag-app separation  
+- Introduce **Helm chart packaging** to manage versioned rollouts  
+- Expand repo to govern **multi-app deployments** beyond ragapp  
 
+
+---
+
+## 📌 Takeaway
+
+This repo is the **GitOps control entry point** for the Azure RAG Platform.  
+It governs delivery with **declarative manifests + Argo CD orchestration**, structured to scale into multi-service, multi-environment operations.  
+
+A delivery system, owned declaratively, and architected for forward growth.
