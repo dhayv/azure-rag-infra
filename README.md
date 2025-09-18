@@ -7,7 +7,9 @@ It defines the reproducible pattern of **declarative application delivery** into
 
 > A delivery system by design — professional, reproducible, and structured to extend into multi-service platform operations.
 
-🔗 **Part of the full project:**  → [azure-gitops-platform](https://github.com/dhayv/azure-gitops-platform)
+🔗 **System Architecture** → This repository governs the **delivery control layer** of the Azure GitOps Platform.  
+The companion repo [azure-rag-app](https://github.com/dhayv/azure-rag-app) manages the **workload layer**.  
+Together, they form a unified platform architecture for declarative delivery into AKS.  
 
 ---
 
@@ -43,8 +45,9 @@ It marks the shift from executor to **platform operator and architect**.
 
 - Extend into **App-of-Apps orchestration** for rag-infra + rag-app separation  
 - Introduce **Helm chart packaging** to manage versioned rollouts  
+- Add **environment overlays** (dev/staging/prod) for controlled promotion  
 - Expand repo to govern **multi-app deployments** beyond ragapp  
-
+- Layer **policy guardrails** (RBAC, sync rules, compliance checks) for enterprise delivery  
 
 ---
 
