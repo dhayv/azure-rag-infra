@@ -1,3 +1,11 @@
 *.env
 *.tfvars
 *.hcl
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+.terraformrc
+terraform.rc
