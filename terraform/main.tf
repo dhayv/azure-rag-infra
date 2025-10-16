@@ -10,6 +10,19 @@ variable "workload_sa_namespace" {
   description = "Kubernetes service account namespace to permit"
 }
 
+module "acr" {
+  source  = "bcochofel/acr/azurerm"
+  version = "0.2.3"
+
+  name                = "acrattachacrexample"
+  resource_group_name = module.rg.name
+
+  sku           = "Basic"
+  admin_enabled = false
+
+  depends_on = [module.rg]
+}
+
 resource "azurerm_kubernetes_cluster" "default" {
   name                = var.aks_name
   location            = data.azurerm_resource_group.rg.location
@@ -50,6 +63,17 @@ data "azurerm_role_definition" "contributor" {
   name = "Contributor"
 }
 
+data "azurerm_container_registry" "acr" {
+  name                = var.acr_name
+  resource_group_name = data.azurerm_resource_group.rg.name
+}
+
+resource "azurerm_role_assignment" "acr-pull" {
+  principal_id                     = azurerm_kubernetes_cluster.example.kubelet_identity[0].object_id
+  role_definition_name             = "AcrPull"
+  scope                            = azurerm_container_registry.acr.id
+  skip_service_principal_aad_check = true
+}
 resource "azurerm_role_assignment" "example" {
   scope              = data.azurerm_subscription.current.id
   role_definition_id = data.azurerm_role_definition.contributor.role_definition_id
