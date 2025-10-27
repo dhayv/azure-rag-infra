@@ -1,26 +1,30 @@
 data "azurerm_subscription" "current" {}
 
-variable "workload_sa_name" {
-  type        = string
-  description = "Kubernetes service account to permit"
+resource "kubernetes_secret" "rag_api_env" {
+  metadata {
+    name      = "rag-api-env"
+    namespace = kubernetes_namespace.ragapp.metadata[0].name
+  }
+
+  data = {
+    AZURE_OPENAI_API_KEY          = var.azure_openai_api_key
+    AZURE_OPENAI_ENDPOINT         = var.azure_openai_endpoint
+    AZURE_OPENAI_API_VERSION      = var.azure_openai_api_version
+    AZURE_OPENAI_EMBED_DEPLOYMENT = var.azure_openai_embed_deployment
+    AZURE_OPENAI_CHAT_DEPLOYMENT  = var.azure_openai_chat_deployment
+    AZURE_SEARCH_ENDPOINT         = var.azure_search_endpoint
+    AZURE_SEARCH_API_KEY          = var.azure_search_api_key
+    AZURE_SEARCH_INDEX            = var.azure_search_index
+  }
+
+  type = "Opaque"
+
+  depends_on = [kubernetes_namespace.ragapp]
 }
 
-variable "workload_sa_namespace" {
-  type        = string
-  description = "Kubernetes service account namespace to permit"
-}
-
-module "acr" {
-  source  = "bcochofel/acr/azurerm"
-  version = "0.2.3"
-
-  name                = "acrattachacrexample"
-  resource_group_name = module.rg.name
-
-  sku           = "Basic"
-  admin_enabled = false
-
-  depends_on = [module.rg]
+data "azurerm_container_registry" "acr" {
+  name                = var.acr_name
+  resource_group_name = data.azurerm_resource_group.rg.name
 }
 
 resource "azurerm_kubernetes_cluster" "default" {
@@ -36,6 +40,12 @@ resource "azurerm_kubernetes_cluster" "default" {
     vm_size         = "Standard_D2_v2"
     os_disk_size_gb = 30
   }
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  oidc_issuer_enabled = true
 
   role_based_access_control_enabled = true
 
@@ -63,21 +73,24 @@ data "azurerm_role_definition" "contributor" {
   name = "Contributor"
 }
 
-data "azurerm_container_registry" "acr" {
-  name                = var.acr_name
-  resource_group_name = data.azurerm_resource_group.rg.name
-}
-
 resource "azurerm_role_assignment" "acr-pull" {
-  principal_id                     = azurerm_kubernetes_cluster.example.kubelet_identity[0].object_id
+  principal_id                     = azurerm_kubernetes_cluster.default.kubelet_identity[0].object_id
   role_definition_name             = "AcrPull"
-  scope                            = azurerm_container_registry.acr.id
+  scope                            = data.azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
 }
 resource "azurerm_role_assignment" "example" {
   scope              = data.azurerm_subscription.current.id
   role_definition_id = data.azurerm_role_definition.contributor.role_definition_id
   principal_id       = azurerm_user_assigned_identity.myworkload_identity.principal_id
+}
+
+resource "kubernetes_namespace" "ragapp" {
+  metadata {
+    name = "ragapp"
+  }
+
+  depends_on = [azurerm_kubernetes_cluster.default]
 }
 
 output "myworkload_identity_client_id" {
