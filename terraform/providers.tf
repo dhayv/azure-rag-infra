@@ -3,7 +3,19 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0.2"
+      version = "~> 3.63"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13.0"
+    }
+    argocd = {
+      source  = "argoproj-labs/argocd"
+      version = "7.11.2"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.38.0"
     }
   }
 
