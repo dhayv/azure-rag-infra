@@ -8,12 +8,12 @@ spec:
   source:
     repoURL: https://github.com/dhayv/azure-rag-infra
     targetRevision: main
-    path: .
+    path: argocd/prod
     directory:
-      recurse: true
+      recurse: false
   destination: 
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: ragapp
   syncPolicy:
     automated:
       prune: true

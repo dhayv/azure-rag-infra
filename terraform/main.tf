@@ -1,26 +1,5 @@
 data "azurerm_subscription" "current" {}
 
-resource "kubernetes_secret" "rag_api_env" {
-  metadata {
-    name      = "rag-api-env"
-    namespace = kubernetes_namespace.ragapp.metadata[0].name
-  }
-
-  data = {
-    AZURE_OPENAI_API_KEY          = var.azure_openai_api_key
-    AZURE_OPENAI_ENDPOINT         = var.azure_openai_endpoint
-    AZURE_OPENAI_API_VERSION      = var.azure_openai_api_version
-    AZURE_OPENAI_EMBED_DEPLOYMENT = var.azure_openai_embed_deployment
-    AZURE_OPENAI_CHAT_DEPLOYMENT  = var.azure_openai_chat_deployment
-    AZURE_SEARCH_ENDPOINT         = var.azure_search_endpoint
-    AZURE_SEARCH_API_KEY          = var.azure_search_api_key
-    AZURE_SEARCH_INDEX            = var.azure_search_index
-  }
-
-  type = "Opaque"
-
-  depends_on = [kubernetes_namespace.ragapp]
-}
 
 data "azurerm_container_registry" "acr" {
   name                = var.acr_name
@@ -32,7 +11,6 @@ resource "azurerm_kubernetes_cluster" "default" {
   location            = data.azurerm_resource_group.rg.location
   resource_group_name = data.azurerm_resource_group.rg.name
   dns_prefix          = var.aks_dns_prefix
-  kubernetes_version  = "1.26.3"
 
   default_node_pool {
     name            = "default"
@@ -53,6 +31,7 @@ resource "azurerm_kubernetes_cluster" "default" {
     environment = "Demo"
   }
 }
+
 
 resource "azurerm_user_assigned_identity" "myworkload_identity" {
   resource_group_name = data.azurerm_resource_group.rg.name
@@ -79,19 +58,12 @@ resource "azurerm_role_assignment" "acr-pull" {
   scope                            = data.azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
 }
-resource "azurerm_role_assignment" "example" {
+resource "azurerm_role_assignment" "default" {
   scope              = data.azurerm_subscription.current.id
   role_definition_id = data.azurerm_role_definition.contributor.role_definition_id
   principal_id       = azurerm_user_assigned_identity.myworkload_identity.principal_id
 }
 
-resource "kubernetes_namespace" "ragapp" {
-  metadata {
-    name = "ragapp"
-  }
-
-  depends_on = [azurerm_kubernetes_cluster.default]
-}
 
 output "myworkload_identity_client_id" {
   description = "The client ID of the created managed identity to use for the annotation 'azure.workload.identity/client-id' on your service account"

@@ -1,41 +1,36 @@
-data "azurerm_kubernetes_cluster" "main" {
-  name                = var.aks_name
-  resource_group_name = data.azurerm_resource_group.rg.name
-}
-
-
-
 provider "kubernetes" {
-  host                   = data.azurerm_kubernetes_cluster.main.kube_config.0.host
-  client_certificate     = base64decode(data.azurerm_kubernetes_cluster.main.kube_config.0.client_certificate)
-  client_key             = base64decode(data.azurerm_kubernetes_cluster.main.kube_config.0.client_key)
-  cluster_ca_certificate = base64decode(data.azurerm_kubernetes_cluster.main.kube_config.0.cluster_ca_certificate)
+  host                   = azurerm_kubernetes_cluster.default.kube_config[0].host
+  client_certificate     = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].client_certificate)
+  client_key             = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].client_key)
+  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].cluster_ca_certificate)
 }
 
 provider "helm" {
   kubernetes {
-    host                   = data.azurerm_kubernetes_cluster.main.kube_config.0.host
-    client_certificate     = base64decode(data.azurerm_kubernetes_cluster.main.kube_config.0.client_certificate)
-    client_key             = base64decode(data.azurerm_kubernetes_cluster.main.kube_config.0.client_key)
-    cluster_ca_certificate = base64decode(data.azurerm_kubernetes_cluster.main.kube_config.0.cluster_ca_certificate)
+    host                   = azurerm_kubernetes_cluster.default.kube_config[0].host
+    client_certificate     = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].client_certificate)
+    client_key             = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].client_key)
+    cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].cluster_ca_certificate)
   }
 }
 
 resource "kubernetes_namespace" "argocd" {
   metadata {
-    annotations = {
-      name = "argocd"
-    }
-
+    name = "argocd"
   }
-
+  
+  depends_on = [azurerm_kubernetes_cluster.default]
 }
 
 resource "helm_release" "argocd" {
   name       = "argocd"
   namespace  = kubernetes_namespace.argocd.metadata[0].name
   repository = "https://argoproj.github.io/argo-helm"
-  version    = "1.2.3"
   chart      = "argo-cd"
 }
 
+resource "kubernetes_manifest" "platform_root" {
+  manifest = yamldecode(file("${path.module}/../argocd/dev/platform-root.yaml"))
+  
+  depends_on = [helm_release.argocd]
+}
