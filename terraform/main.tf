@@ -14,6 +14,27 @@ resource "kubernetes_namespace" "argocd" {
   depends_on = [azurerm_kubernetes_cluster.default]
 }
 
+# Create namespaces for each environment
+resource "kubernetes_namespace" "ragapp_dev" {
+  metadata {
+    name = "ragapp-dev"
+  }
+  depends_on = [azurerm_kubernetes_cluster.default]
+}
+
+resource "kubernetes_namespace" "ragapp_staging" {
+  metadata {
+    name = "ragapp-staging"
+  }
+  depends_on = [azurerm_kubernetes_cluster.default]
+}
+
+resource "kubernetes_namespace" "ragapp_prod" {
+  metadata {
+    name = "ragapp-prod"
+  }
+  depends_on = [azurerm_kubernetes_cluster.default]
+}
 resource "azurerm_kubernetes_cluster" "default" {
   name                = var.aks_name
   location            = data.azurerm_resource_group.rg.location
@@ -82,10 +103,10 @@ output "myworkload_identity_client_id" {
 }
 
 
-resource "kubernetes_secret" "rag_api_env" {
+resource "kubernetes_secret" "rag_api_env_dev" {
   metadata {
     name      = "rag-api-env"
-    namespace = "ragapp"
+    namespace = kubernetes_namespace.ragapp_dev.metadata[0].name
   }
 
   data = {
@@ -100,6 +121,47 @@ resource "kubernetes_secret" "rag_api_env" {
   }
 
   type = "Opaque"
+  depends_on = [kubernetes_namespace.ragapp_dev]
+}
 
-  depends_on = [azurerm_kubernetes_cluster.default]
+resource "kubernetes_secret" "rag_api_env_staging" {
+  metadata {
+    name      = "rag-api-env"
+    namespace = kubernetes_namespace.ragapp_staging.metadata[0].name
+  }
+
+  data = {
+    AZURE_OPENAI_API_KEY          = var.azure_openai_api_key
+    AZURE_OPENAI_ENDPOINT         = var.azure_openai_endpoint
+    AZURE_OPENAI_API_VERSION      = var.azure_openai_api_version
+    AZURE_OPENAI_EMBED_DEPLOYMENT = var.azure_openai_embed_deployment
+    AZURE_OPENAI_CHAT_DEPLOYMENT  = var.azure_openai_chat_deployment
+    AZURE_SEARCH_ENDPOINT         = var.azure_search_endpoint
+    AZURE_SEARCH_API_KEY          = var.azure_search_api_key
+    AZURE_SEARCH_INDEX            = var.azure_search_index
+  }
+
+  type = "Opaque"
+  depends_on = [kubernetes_namespace.ragapp_staging]
+}
+
+resource "kubernetes_secret" "rag_api_env_prod" {
+  metadata {
+    name      = "rag-api-env"
+    namespace = kubernetes_namespace.ragapp_prod.metadata[0].name
+  }
+
+  data = {
+    AZURE_OPENAI_API_KEY          = var.azure_openai_api_key
+    AZURE_OPENAI_ENDPOINT         = var.azure_openai_endpoint
+    AZURE_OPENAI_API_VERSION      = var.azure_openai_api_version
+    AZURE_OPENAI_EMBED_DEPLOYMENT = var.azure_openai_embed_deployment
+    AZURE_OPENAI_CHAT_DEPLOYMENT  = var.azure_openai_chat_deployment
+    AZURE_SEARCH_ENDPOINT         = var.azure_search_endpoint
+    AZURE_SEARCH_API_KEY          = var.azure_search_api_key
+    AZURE_SEARCH_INDEX            = var.azure_search_index
+  }
+
+  type = "Opaque"
+  depends_on = [kubernetes_namespace.ragapp_prod]
 }
