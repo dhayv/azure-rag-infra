@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/dhayv/azure-rag-app
     targetRevision: main
-    path: argocd/prod
+    path: rag-app/argocd/prod
     directory:
       recurse: true
   destination: 
