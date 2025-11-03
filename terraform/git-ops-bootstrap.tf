@@ -14,13 +14,15 @@ provider "helm" {
   }
 }
 
-resource "kubernetes_namespace" "argocd" {
-  metadata {
-    name = "argocd"
-  }
-  
-  depends_on = [azurerm_kubernetes_cluster.default]
+provider "kubectl" {
+  host                   = azurerm_kubernetes_cluster.default.kube_config[0].host
+  client_certificate     = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].client_certificate)
+  client_key             = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].client_key)
+  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.default.kube_config[0].cluster_ca_certificate)
+  load_config_file       = false
 }
+
+
 
 resource "helm_release" "argocd" {
   name       = "argocd"
@@ -29,8 +31,8 @@ resource "helm_release" "argocd" {
   chart      = "argo-cd"
 }
 
-resource "kubernetes_manifest" "platform_root" {
-  manifest = yamldecode(file("${path.module}/../argocd/dev/platform-root.yaml"))
-  
+resource "kubectl_manifest" "platform_root" {
+  yaml_body = file("${path.module}/../apps/apps.yaml")
+
   depends_on = [helm_release.argocd]
 }
