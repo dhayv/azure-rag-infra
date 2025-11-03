@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: platform-root
+  name: ragapp-dev
   namespace: argocd # argo-cdnamespace.yaml
 spec:
   project: default
   source:
-    repoURL: https://github.com/dhayv/azure-rag-infra
+    repoURL: https://github.com/dhayv/azure-rag-app
     targetRevision: main
-    path: .
+    path: argocd/dev
     directory:
       recurse: true
   destination: 
     server: https://kubernetes.default.svc
-    namespace: argocd
+    namespace: ragapp-dev
   syncPolicy:
     automated:
       prune: true
