@@ -1,59 +1,63 @@
 # RAG Infra – Azure GitOps Control Layer
 
-**Azure | AKS | Kubernetes | GitOps | Argo CD | CI/CD | Platform Architecture | Declarative Infrastructure**
+**Azure | AKS | Kubernetes | Workload Identity | Terraform | Argo CD | GitOps**
 
-This repository governs the **GitOps control plane** for the Azure RAG Platform.  
-It defines the reproducible pattern of **declarative application delivery** into AKS, with Argo CD orchestrating Kubernetes workloads at scale.
-
-> A delivery system by design — professional, reproducible, and structured to extend into multi-service platform operations.
-
-🔗 **System Architecture** → This repository governs the **delivery control layer** of the Azure GitOps Platform.  
-The companion repo [azure-rag-app](https://github.com/dhayv/azure-rag-app) manages the **workload layer**.  
-Together, they form a unified platform architecture for declarative delivery into AKS.  
+The `infra/` directory is the standalone `azure-rag-infra` repository.  
+It owns everything required to stand up the cluster, install Argo CD, and keep the `rag-app` workload synchronized across environments.
 
 ---
 
-## 🧱 Structure
+## 📁 What Lives Here
 
-- **Namespace** → isolates the RAG application (`ragapp`)  
-- **Deployment** → FastAPI app with replicas + health checks  
-- **Service** → exposes the app internally and via LoadBalancer  
-- **Secrets** → manages Azure credentials for RAG integration  
-- **Argo CD Root App** → directs this repo declaratively into AKS  
-
----
-
-## 🧠 Why This Repo?
-
-Most engineers ship pipelines. **Fewer design the control layer that governs delivery.**  
-This repo shows how to own **what ships, when, and how** — with Git as the source of truth, Argo CD as the orchestrator, and AKS as the execution platform.  
-
-It marks the shift from executor to **platform operator and architect**.
+| Path | Purpose |
+| --- | --- |
+| `apps/apps.yaml` | Root Argo CD Application (app-of-apps) that points at this repo. |
+| `apps/{dev,staging,prod}/*.yaml` | Environment-specific Applications that sync `rag-app/argocd/<env>` from the workload repo. |
+| `argo-cdnamespace.yaml` | Namespace bootstrap for the Argo CD control plane. |
+| `terraform/` | Azure + AKS bootstrap: cluster, namespaces, workload identity, AcrPull role, and per-env secrets. |
+| `commands.env` | Helper CLI snippets for provisioning Azure OpenAI deployments. |
 
 ---
 
-## 🚀 Responsibilities
+## 🚀 Bootstrap AKS + Argo CD (Terraform)
+1. `cd infra/terraform`
+2. Populate `terraform.tfvars` with your subscription, resource group, AKS name, ACR name, and Azure OpenAI / AI Search credentials.
+3. `terraform init`
+4. `terraform apply`
 
-- ✅ Installs and configures **Argo CD** in AKS  
-- ✅ Deploys the RAG API into a dedicated namespace  
-- ✅ Owns manifests for Deployment, Service, Namespace, and Secrets  
-- ✅ Directs the **GitOps reconciliation loop**: Git → Argo CD → AKS  
+What Terraform does:
+- Creates/reads the resource group and ACR you specify.
+- Provisions the AKS cluster with OIDC + workload identity enabled.
+- Grants the cluster `AcrPull`, plus deploys a user-assigned identity and federated credential for your service account.
+- Creates namespaces: `argocd`, `ragapp-dev`, `ragapp-staging`, `ragapp-prod`.
+- Injects the `rag-api-env` secret into each environment using the `AZURE_*` variables from `terraform.tfvars`.
 
----
-
-## 🧪 Roadmap
-
-- Extend into **App-of-Apps orchestration** for rag-infra + rag-app separation  
-- Introduce **Helm chart packaging** to manage versioned rollouts  
-- Add **environment overlays** (dev/staging/prod) for controlled promotion  
-- Expand repo to govern **multi-app deployments** beyond ragapp  
-- Layer **policy guardrails** (RBAC, sync rules, compliance checks) for enterprise delivery  
+`output.myworkload_identity_client_id` is printed at the end; annotate your Kubernetes service account with this value if you expand to workload identity–based Azure SDK auth.
 
 ---
 
-## 📌 Takeaway
+## 🔁 Wire Up the GitOps Loop
+1. Ensure the Argo CD namespace exists: `kubectl apply -f infra/argo-cdnamespace.yaml`.
+2. Install Argo CD (helm, manifests, or the official install method).
+3. Register the root application:
+   ```bash
+   kubectl apply -n argocd -f infra/apps/apps.yaml
+   ```
+4. The root app creates the environment apps defined in `apps/{dev,staging,prod}` which in turn sync the manifests living in the workload repo (`rag-app/argocd/<env>`).
+5. Edit the image tag or configuration in the workload repo, merge to `main`, and let Argo CD reconcile.
 
-This repo is the **GitOps control entry point** for the Azure RAG Platform.  
-It governs delivery with **declarative manifests + Argo CD orchestration**, structured to scale into multi-service, multi-environment operations.  
+---
 
-A delivery system, owned declaratively, and architected for forward growth.
+## 🔐 Secrets & Config
+- `kubernetes_secret.rag_api_env_*` in Terraform sources all required Azure keys per environment.
+- Secrets are written as `Opaque` and referenced by the workload Deployment via `envFrom`.
+- Update secret values by editing `terraform.tfvars` and reapplying; Argo CD will roll pods once Kubernetes reports the new secret.
+
+---
+
+## ➕ Extending the Control Plane
+- **New environment** → add another namespace + secret in Terraform, create a matching `apps/<env>/<env>-apps.yaml`, and point it at a new `rag-app/argocd/<env>` folder.
+- **Additional workloads** → add Applications under `apps/` that reference other repos or paths; Argo CD handles the rest.
+- **Policies / RBAC** → layer them via additional Terraform resources or Kubernetes manifests in this repo to keep governance declarative.
+
+This folder is the contract between Azure and Git. Keep it lean, declarative, and versioned so platform operations stay repeatable.
